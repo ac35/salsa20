@@ -1,3 +1,35 @@
+'''
+    kode di bawah ini merupakan implementasi dari contoh fungsi Salsa20 core
+    pada laporan "The Salsa20 family of stream ciphers" oleh Daniel J. Bernstein.
+    (contoh dapat dilihat di bagian 4.1 What does Salsa20 do?)
+    
+    Pada contoh tersebut diberikan beberapa variabel:
+    - key dalam bentuk array dengan nilai [1,2,3,...,32]
+    - nonce [3,1,4,1, 5,9,2,6]
+    - block 7 [7,0,0,0, 0,0,0,0]
+        # yang benar itu adalah [7,0,0,0, 0,0,0,0]. Bukan [0,0,0,7, 0,0,0,0]
+        # > block_counter = [7,0,0,0, 0,0,0,0]
+        # > b = [little_endian(block_counter[4*i:4*i+4]) for i in range(2)]
+        # > b
+        #   [7, 0]
+        # > type(b[0]), type(b[1])
+        #   (int, int)
+        # kalau [0,0,0,7, 0,0,0,0]
+        # > block_counter = [0,0,0,7, 0,0,0,0]
+        # > b = [little_endian(block_counter[4*i:4*i+4]) for i in range(2)]
+        # > b
+        #   [117440512, 0]
+        # beda hasilnya
+        # kesimpulan: block_counter yang akan diberi ke Salsa() bentuknya 
+        #             big-endian 7,0,0,0 (jangan berbentuk little-endian 0,0,0,7)
+        # catatan: 7,0,0,0 di dalam array [7,0,0,0, 0,0,0,0] merepresentasikan
+        #          satu word (32-bit/4-byte). 
+        #          ingan block_counter pada Salsa20 ukurannya itu dua word
+        #          (64bit/8-byte).
+        #          
+'''
+
+
 class Salsa:
   def __init__(self,r=20):
     assert r >= 0
@@ -8,26 +40,44 @@ class Salsa:
     assert len(key) == 32
     assert len(nonce) == 8
     assert len(block_counter) == 8
-     
-    # init state
-    k = [self._littleendian(key[4*i:4*i+4]) for i in xrange(8)]
-    n = [self._littleendian(nonce[4*i:4*i+4]) for i in xrange(2)]
-    b = [self._littleendian(block_counter[4*i:4*i+4]) for i in xrange(2)]
+    
+    ## print(key)
+    ## print([key[4*i:4*i+4] for i in range(8)])
+    
+	# init state
+    k = [self._littleendian(key[4*i:4*i+4]) for i in range(8)]
+    
+    ## print(k)
+	
+    n = [self._littleendian(nonce[4*i:4*i+4]) for i in range(2)]
+    b = [self._littleendian(block_counter[4*i:4*i+4]) for i in range(2)]
     c = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]
 
+    
+    # -------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
+    # empat constant word khusus untuk contoh kedua
+    # empatConstantWord = [211,159,13,115, 1,106,178,219, 116,147,48,113, 88,118,104,54]
+    # c = [self._littleendian(empatConstantWord[4*i:4*i+4]) for i in range(4)]
+    # -------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
+    
+    
     s = [c[0], k[0], k[1], k[2], 
          k[3], c[1], n[0], n[1],
          b[0], b[1], c[2], k[4], 
          k[5], k[6], k[7], c[3]]
 
+    ## print(s)     
+
     # the state
     self._s = s[:]
 
-    for i in xrange(self._r):
+    for i in range(self._r):
       self._round()
 
     # add initial state to the final one
-    self._s = [(self._s[i] + s[i]) & self._mask for i in xrange(16)]
+    self._s = [(self._s[i] + s[i]) & self._mask for i in range(16)]
 
     return self._s
 
